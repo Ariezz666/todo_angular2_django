@@ -1,0 +1,47 @@
+{% load staticfiles %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/style.css' %}" />
+
+{% load staticfiles %}
+
+
+{% block extra_js %}
+    <!-- Angular 2 -->
+    <script src="{% static 'node_modules/es6-shim/es6-shim.min.js' %}"></script>
+    <script src="{% static 'node_modules/systemjs/dist/system-polyfills.js' %}"></script>
+    <script src="{% static 'node_modules/angular2/es6/dev/src/testing/shims_for_IE.js' %}"></script>
+    <script src="{% static 'node_modules/angular2/bundles/angular2-polyfills.js' %}"></script>
+    <script src="{% static 'node_modules/systemjs/dist/system.src.js' %}"></script>
+    <script src="{% static 'node_modules/rxjs/bundles/Rx.js' %}"></script>
+    <script src="{% static 'node_modules/angular2/bundles/angular2.js' %}"></script>
+    <script src="{% static 'node_modules/angular2/bundles/router.dev.js' %}"></script>
+    <script src="{% static 'node_modules/angular2/bundles/http.js' %}"></script>
+
+    <script>
+    System.config({
+        paths:{
+            'angular2/*': '../static/node_modules/angular2/*',
+            'rxjs/*': '../static/node_modules/rxjs/*',
+            './*': '../static/app/*'
+        },
+        defaultJSExtensions: true,
+        globalEvaluationScope: false,
+        format: 'register',
+        packages: {
+            globalEvaluationScope: false,
+            '../static/app': {
+                format: 'register',
+                defaultJSExtensions: true,
+                defaultExtension: 'js',
+                globalEvaluationScope: false
+            }
+        }
+    });
+    System.import('../static/app/main')
+            .then(null, console.error.bind(console));
+</script>
+
+{% endblock %}
+
+<my-app>
+    ...Loading
+</my-app>
