@@ -45,7 +45,7 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/Rx'], function(exports_
                     headers.append('X-CSRFToken', this.getCookie('csrftoken'));
                     return this._http.post('/tasks/?format=json', body, {
                         headers: headers
-                    }).map(function (res) { return res.json(); }).map(function (res) { return res.json(); });
+                    }).map(function (res) { return res.json(); });
                 };
                 TaskService.prototype.deleteTask = function (pk) {
                     var headers = new http_1.Headers();

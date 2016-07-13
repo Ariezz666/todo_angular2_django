@@ -18,7 +18,7 @@ export class TaskService{
 
     getTasks(){
         return this._http.get('/tasks/?format=json')
-        .map(res => res.json());
+                    .map(res => res.json());
     }
 
     createPost(post: {title: string, completed: boolean}){
@@ -30,7 +30,7 @@ export class TaskService{
         headers.append('X-CSRFToken', this.getCookie('csrftoken'));
         return this._http.post('/tasks/?format=json', body, {
             headers: headers
-        }).map(res => res.json()).map(res => res.json());
+        }).map(res => res.json());
     }
 
 

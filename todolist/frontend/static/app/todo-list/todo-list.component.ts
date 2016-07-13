@@ -18,13 +18,13 @@ import {Task} from './task';
                 </ul>
             </div>
             <div class="footer">
-                <div class="link">1 item left</div>
+                <div class="link" ><strong>{{activeTasksCount}}</strong> {{activeTasksCount == 1 ? 'item' : 'items'}} left</div>
                 <div class="link-center">
                     <a [ngClass]="{isActive: isActive === 'all'}" (click)="onActive('all')">All</a>
                     <a [ngClass]="{isActive: isActive === 'active'}" (click)="onActive('active')">Active</a>
                     <a [ngClass]="{isActive: isActive === 'completed'}" (click)="onActive('completed')">Completed</a>
                 </div>
-                <div class="link-right"><a>Clear completed</a></div>
+                <div class="link-right" (click)="onDeleteAllCompleted()" *ngIf="completedTasks.length > 0"><a>Clear completed</a></div>
             </div>
         </div>
     `,
@@ -33,29 +33,39 @@ import {Task} from './task';
 
 export class TodoListComponent{
     title: string;
-    tasks: string;
+    tasks: Task[] = [];
     response: string;
     newTaskTitle = '';
     selectedTask: {title: string, completed: boolean, id: number} = null;
     deletedTask: {title: string, completed: boolean, id: number} = null;
     isActive = 'all';
+    activeTasks: Task[] = [];
+    completedTasks: Task[] = [];
+    allTasks: Task[] = [];
+    activeTasksCount = 0;
 
     constructor(private _taskService: TaskService){
         this.title = 'TODOS';
+        console.log('test2');
         this.getTasks();
-
+        console.log(this.tasks);
     }
 
     
     getTasks(){
         this._taskService.getTasks()
             .subscribe(
-                response => this.tasks = response,
+                response => {
+                    this.tasks = response;
+                    this.allTasks = response;
+                    this.onActive(this.isActive);
+                },
                 error => console.log(error)
             )
     }
 
     addTask(){
+        console.log(this.tasks);
         if (this.newTaskTitle===''){
             alert('Error. Task cant be empty');
         }
@@ -115,7 +125,43 @@ export class TodoListComponent{
 
     onActive(status: string){
         this.isActive = status;
+        this.getActive();
+        if (status === 'completed'){
+            this.tasks = this.completedTasks;
+        } else if (status === 'active'){
+            this.tasks = this.activeTasks;
+        } else
+            this.tasks = this.allTasks;
+    }
 
+    getActive(){
+
+        this.completedTasks = [];
+        this.activeTasks = [];
+        this.activeTasksCount = 0;
+
+        for (var i = 0; i < this.allTasks.length; i++){
+            if (this.allTasks[i].completed){
+                this.completedTasks.push(this.allTasks[i]);
+
+            } else{
+                this.activeTasks.push(this.allTasks[i]);
+                this.activeTasksCount += 1;
+            }
+        }
+
+    }
+
+    onDeleteAllCompleted(){
+        for(var i = 0; i < this.completedTasks.length; i++){
+            this._taskService.deleteTask(this.completedTasks[i].id)
+            .subscribe(
+                response => console.log('Task deleted, id = ' + this.completedTasks[i].id),
+                error => console.log(error)
+        );
+        }
+        this.getTasks();
+        this.onActive(this.isActive);
     }
 
 }

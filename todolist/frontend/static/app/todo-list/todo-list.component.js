@@ -24,19 +24,31 @@ System.register(['angular2/core', "./todo-list.service"], function(exports_1, co
             TodoListComponent = (function () {
                 function TodoListComponent(_taskService) {
                     this._taskService = _taskService;
+                    this.tasks = [];
                     this.newTaskTitle = '';
                     this.selectedTask = null;
                     this.deletedTask = null;
                     this.isActive = 'all';
+                    this.activeTasks = [];
+                    this.completedTasks = [];
+                    this.allTasks = [];
+                    this.activeTasksCount = 0;
                     this.title = 'TODOS';
+                    console.log('test2');
                     this.getTasks();
+                    console.log(this.tasks);
                 }
                 TodoListComponent.prototype.getTasks = function () {
                     var _this = this;
                     this._taskService.getTasks()
-                        .subscribe(function (response) { return _this.tasks = response; }, function (error) { return console.log(error); });
+                        .subscribe(function (response) {
+                        _this.tasks = response;
+                        _this.allTasks = response;
+                        _this.onActive(_this.isActive);
+                    }, function (error) { return console.log(error); });
                 };
                 TodoListComponent.prototype.addTask = function () {
+                    console.log(this.tasks);
                     if (this.newTaskTitle === '') {
                         alert('Error. Task cant be empty');
                     }
@@ -76,11 +88,43 @@ System.register(['angular2/core', "./todo-list.service"], function(exports_1, co
                 };
                 TodoListComponent.prototype.onActive = function (status) {
                     this.isActive = status;
+                    this.getActive();
+                    if (status === 'completed') {
+                        this.tasks = this.completedTasks;
+                    }
+                    else if (status === 'active') {
+                        this.tasks = this.activeTasks;
+                    }
+                    else
+                        this.tasks = this.allTasks;
+                };
+                TodoListComponent.prototype.getActive = function () {
+                    this.completedTasks = [];
+                    this.activeTasks = [];
+                    this.activeTasksCount = 0;
+                    for (var i = 0; i < this.allTasks.length; i++) {
+                        if (this.allTasks[i].completed) {
+                            this.completedTasks.push(this.allTasks[i]);
+                        }
+                        else {
+                            this.activeTasks.push(this.allTasks[i]);
+                            this.activeTasksCount += 1;
+                        }
+                    }
+                };
+                TodoListComponent.prototype.onDeleteAllCompleted = function () {
+                    var _this = this;
+                    for (var i = 0; i < this.completedTasks.length; i++) {
+                        this._taskService.deleteTask(this.completedTasks[i].id)
+                            .subscribe(function (response) { return console.log('Task deleted, id = ' + _this.completedTasks[i].id); }, function (error) { return console.log(error); });
+                    }
+                    this.getTasks();
+                    this.onActive(this.isActive);
                 };
                 TodoListComponent = __decorate([
                     core_1.Component({
                         selector: 'my-todo-list',
-                        template: "\n        <div class=\"todo\">\n            <h1>{{title}}</h1>\n            <input id=\"task-title\" placeholder=\"What needs to be done?\" [(ngModel)]=\"newTaskTitle\" autofocus  (keyup.enter)=\"addTask()\">\n            <div class=\"list\">\n                <ul>\n                    <li  *ngFor=\"#task of tasks\"  (mouseover)=\"onMoseOver(task)\" (mouseleave)=\"onMoseLeave()\" (dblclick)=\"editTask(task)\"><input type=\"checkbox\" [checked]=\"task.completed\" (change)=\"toggleCompletion(task)\">\n                        <span [ngClass]=\"{completed: task.completed}\" *ngIf=\"task !== selectedTask\">{{ task.title }}</span>\n                        <input id=\"task-title-edit\" type=\"text\" *ngIf=\"task === selectedTask\" value=\"{{task.title}}\" #updateTitle (keyup.enter)=\"updateTask(updateTitle.value)\" (keyup.escape)=\"cancelEditingTask()\">\n                        <span *ngIf=\"task === deletedTask  && task !== selectedTask\" ><button class=\"delete\" (click)=\"onDelete(task.id)\">Delete</button></span>\n                    </li>\n                </ul>\n            </div>\n            <div class=\"footer\">\n                <div class=\"link\">1 item left</div>\n                <div class=\"link-center\">\n                    <a [ngClass]=\"{isActive: isActive === 'all'}\" (click)=\"onActive('all')\">All</a>\n                    <a [ngClass]=\"{isActive: isActive === 'active'}\" (click)=\"onActive('active')\">Active</a>\n                    <a [ngClass]=\"{isActive: isActive === 'completed'}\" (click)=\"onActive('completed')\">Completed</a>\n                </div>\n                <div class=\"link-right\"><a>Clear completed</a></div>\n            </div>\n        </div>\n    ",
+                        template: "\n        <div class=\"todo\">\n            <h1>{{title}}</h1>\n            <input id=\"task-title\" placeholder=\"What needs to be done?\" [(ngModel)]=\"newTaskTitle\" autofocus  (keyup.enter)=\"addTask()\">\n            <div class=\"list\">\n                <ul>\n                    <li  *ngFor=\"#task of tasks\"  (mouseover)=\"onMoseOver(task)\" (mouseleave)=\"onMoseLeave()\" (dblclick)=\"editTask(task)\"><input type=\"checkbox\" [checked]=\"task.completed\" (change)=\"toggleCompletion(task)\">\n                        <span [ngClass]=\"{completed: task.completed}\" *ngIf=\"task !== selectedTask\">{{ task.title }}</span>\n                        <input id=\"task-title-edit\" type=\"text\" *ngIf=\"task === selectedTask\" value=\"{{task.title}}\" #updateTitle (keyup.enter)=\"updateTask(updateTitle.value)\" (keyup.escape)=\"cancelEditingTask()\">\n                        <span *ngIf=\"task === deletedTask  && task !== selectedTask\" ><button class=\"delete\" (click)=\"onDelete(task.id)\">Delete</button></span>\n                    </li>\n                </ul>\n            </div>\n            <div class=\"footer\">\n                <div class=\"link\" ><strong>{{activeTasksCount}}</strong> {{activeTasksCount == 1 ? 'item' : 'items'}} left</div>\n                <div class=\"link-center\">\n                    <a [ngClass]=\"{isActive: isActive === 'all'}\" (click)=\"onActive('all')\">All</a>\n                    <a [ngClass]=\"{isActive: isActive === 'active'}\" (click)=\"onActive('active')\">Active</a>\n                    <a [ngClass]=\"{isActive: isActive === 'completed'}\" (click)=\"onActive('completed')\">Completed</a>\n                </div>\n                <div class=\"link-right\" (click)=\"onDeleteAllCompleted()\" *ngIf=\"completedTasks.length > 0\"><a>Clear completed</a></div>\n            </div>\n        </div>\n    ",
                         providers: [todo_list_service_1.TaskService],
                     }), 
                     __metadata('design:paramtypes', [todo_list_service_1.TaskService])
