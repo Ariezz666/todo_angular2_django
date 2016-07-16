@@ -25,6 +25,12 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/Rx'], function(exports_
             TaskService = (function () {
                 function TaskService(_http) {
                     this._http = _http;
+                    this.tasks = [];
+                    this.activeTasks = [];
+                    this.completedTasks = [];
+                    this.allTasks = [];
+                    this.activeTasksCount = 0;
+                    this.getTasks('all');
                 }
                 TaskService.prototype.getCookie = function (name) {
                     var value = "; " + document.cookie;
@@ -32,43 +38,80 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/Rx'], function(exports_
                     if (parts.length == 2)
                         return parts.pop().split(";").shift();
                 };
-                TaskService.prototype.getTasks = function () {
-                    return this._http.get('/tasks/?format=json')
-                        .map(function (res) { return res.json(); });
+                TaskService.prototype.getTasks = function (status) {
+                    var _this = this;
+                    this._http.get('/tasks/?format=json')
+                        .map(function (res) { return res.json(); })
+                        .subscribe(function (response) {
+                        _this.allTasks = response;
+                        _this.setTasks(status);
+                    }, function (error) { return console.log(error); });
                 };
-                TaskService.prototype.createPost = function (post) {
+                TaskService.prototype.createPost = function (post, status) {
                     var body = JSON.stringify({ title: post.title, completed: post.completed });
                     console.log(post);
                     console.log(body);
                     var headers = new http_1.Headers();
                     headers.append('Content-Type', 'application/json');
                     headers.append('X-CSRFToken', this.getCookie('csrftoken'));
-                    return this._http.post('/tasks/?format=json', body, {
+                    this._http.post('/tasks/?format=json', body, {
                         headers: headers
-                    }).map(function (res) { return res.json(); });
+                    }).map(function (res) { return res.json(); })
+                        .subscribe(function (response) { return console.log('Task created successful'); }, function (error) { return console.log(error); });
+                    this.getTasks(status);
+                    this.getTasks(status);
+                    // this.setTasks(status);
+                    // this.setTasks(status);
                 };
-                TaskService.prototype.deleteTask = function (pk) {
+                TaskService.prototype.deleteTask = function (task, status) {
+                    this.allTasks.splice(this.allTasks.indexOf(task), 1);
+                    this.setTasks(status);
                     var headers = new http_1.Headers();
                     headers.append('Content-Type', 'application/json');
                     headers.append('X-CSRFToken', this.getCookie('csrftoken'));
-                    var url = '/tasks/' + pk + '/?format=json';
-                    console.log(url);
-                    return this._http.delete(url, {
+                    var url = '/tasks/' + task.id + '/?format=json';
+                    this._http.delete(url, {
                         headers: headers
-                    });
+                    }).subscribe(function (response) { return console.log('Task deleted, id = ' + task.id); }, function (error) { return console.log(error); });
                 };
-                TaskService.prototype.updateTask = function (post) {
-                    var body = JSON.stringify({ title: post.title, completed: post.completed });
-                    console.log(post);
-                    console.log(body);
+                TaskService.prototype.updateTask = function (task, newTask, status) {
+                    this.allTasks[this.allTasks.indexOf(task)] = newTask;
+                    this.setTasks(status);
+                    var body = JSON.stringify({ title: newTask.title, completed: newTask.completed });
                     var headers = new http_1.Headers();
                     headers.append('Content-Type', 'application/json');
                     headers.append('X-CSRFToken', this.getCookie('csrftoken'));
-                    var url = '/tasks/' + post.pk + '/?format=json';
+                    var url = '/tasks/' + task.id + '/?format=json';
                     console.log(url);
-                    return this._http.put(url, body, {
+                    this._http.put(url, body, {
                         headers: headers
-                    });
+                    }).subscribe(function (response) { return console.log('Task updated, id = ' + task.id); }, function (error) { return console.log(error); });
+                };
+                TaskService.prototype.getActive = function () {
+                    this.completedTasks = [];
+                    this.activeTasks = [];
+                    this.activeTasksCount = 0;
+                    for (var i = 0; i < this.allTasks.length; i++) {
+                        if (this.allTasks[i].completed) {
+                            this.completedTasks.push(this.allTasks[i]);
+                        }
+                        else {
+                            this.activeTasks.push(this.allTasks[i]);
+                            this.activeTasksCount += 1;
+                        }
+                    }
+                };
+                TaskService.prototype.setTasks = function (status) {
+                    this.getActive();
+                    if (status === "completed") {
+                        this.tasks = this.completedTasks;
+                    }
+                    else if (status === "active") {
+                        this.tasks = this.activeTasks;
+                    }
+                    else {
+                        this.tasks = this.allTasks;
+                    }
                 };
                 TaskService = __decorate([
                     core_1.Injectable(), 

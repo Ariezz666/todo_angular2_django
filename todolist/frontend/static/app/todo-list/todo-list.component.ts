@@ -6,25 +6,28 @@ import {Task} from './task';
     selector: 'my-todo-list',
     template: `
         <div class="todo">
-            <h1>{{title}}</h1>
-            <input id="task-title" placeholder="What needs to be done?" [(ngModel)]="newTaskTitle" autofocus  (keyup.enter)="addTask()">
+            <h1>TODOS</h1>
+            <input id="task-title" placeholder="What needs to be done?" [(ngModel)]="newTaskTitle" autofocus (keyup.enter)="addTask()">
             <div class="list">
                 <ul>
-                    <li  *ngFor="#task of tasks"  (mouseover)="onMoseOver(task)" (mouseleave)="onMoseLeave()" (dblclick)="editTask(task)"><input type="checkbox" [checked]="task.completed" (change)="toggleCompletion(task)">
+                    <li  *ngFor="#task of _taskService.tasks" (mouseover)="onMoseOver(task)" (mouseleave)="onMoseLeave()" (dblclick)="editTask(task)">
+                        <input type="checkbox" [checked]="task.completed" (change)="toggleCompletion(task)" *ngIf="task !== selectedTask">
                         <span [ngClass]="{completed: task.completed}" *ngIf="task !== selectedTask">{{ task.title }}</span>
                         <input id="task-title-edit" type="text" *ngIf="task === selectedTask" value="{{task.title}}" #updateTitle (keyup.enter)="updateTask(updateTitle.value)" (keyup.escape)="cancelEditingTask()">
-                        <span *ngIf="task === deletedTask  && task !== selectedTask" ><button class="delete" (click)="onDelete(task.id)">Delete</button></span>
+                        <span *ngIf="task === deletedTask  && task !== selectedTask" ><button class="delete" (click)="onDelete(task)">Delete</button></span>
                     </li>
+                    <li *ngIf="_taskService.tasks.length === 0 && isActive !== 'completed'"><strong>You do not have active tasks now. Let's create a new one task</strong></li>
+                    <li *ngIf="_taskService.tasks.length === 0 && isActive === 'completed'"><strong>You do not have completed tasks now. Let's complete your tasks</strong></li>
                 </ul>
             </div>
             <div class="footer">
-                <div class="link" ><strong>{{activeTasksCount}}</strong> {{activeTasksCount == 1 ? 'item' : 'items'}} left</div>
+                <div class="link" ><strong>{{_taskService.activeTasksCount}}</strong> {{_taskService.activeTasksCount == 1 ? 'item' : 'items'}} left</div>
                 <div class="link-center">
                     <a [ngClass]="{isActive: isActive === 'all'}" (click)="onActive('all')">All</a>
                     <a [ngClass]="{isActive: isActive === 'active'}" (click)="onActive('active')">Active</a>
                     <a [ngClass]="{isActive: isActive === 'completed'}" (click)="onActive('completed')">Completed</a>
                 </div>
-                <div class="link-right" (click)="onDeleteAllCompleted()" *ngIf="completedTasks.length > 0"><a>Clear completed</a></div>
+                <div class="link-right" (click)="onDeleteAllCompleted()" *ngIf="_taskService.completedTasks.length > 0"><a>Clear completed</a></div>
             </div>
         </div>
     `,
@@ -32,72 +35,38 @@ import {Task} from './task';
 })
 
 export class TodoListComponent{
-    title: string;
-    tasks: Task[] = [];
-    response: string;
-    newTaskTitle = '';
-    selectedTask: {title: string, completed: boolean, id: number} = null;
-    deletedTask: {title: string, completed: boolean, id: number} = null;
-    isActive = 'all';
-    activeTasks: Task[] = [];
-    completedTasks: Task[] = [];
-    allTasks: Task[] = [];
-    activeTasksCount = 0;
+
+    newTaskTitle: string = '';
+    selectedTask: Task = null;
+    deletedTask: Task = null;
+    isActive: string = 'all';
+
 
     constructor(private _taskService: TaskService){
-        this.title = 'TODOS';
-        console.log('test2');
-        this.getTasks();
-        console.log(this.tasks);
-    }
-
-    
-    getTasks(){
-        this._taskService.getTasks()
-            .subscribe(
-                response => {
-                    this.tasks = response;
-                    this.allTasks = response;
-                    this.onActive(this.isActive);
-                },
-                error => console.log(error)
-            )
+        console.log('constructor_TodoListComponent62');
     }
 
     addTask(){
-        console.log(this.tasks);
-        if (this.newTaskTitle===''){
-            alert('Error. Task cant be empty');
+
+        if (this.newTaskTitle!==''){
+            this._taskService.createPost({title: this.newTaskTitle, completed: false}, this.isActive);
+            this.newTaskTitle = '';
+            this._taskService.setTasks(this.isActive);
         }
-
-        this._taskService.createPost({title: this.newTaskTitle, completed: false})
-            .subscribe(
-                response => console.log('Task created successful'),
-                error => console.log(error)
-        );
-        this.newTaskTitle = '';
-        this.getTasks();
     }
 
-    onDelete(id: number){
-        this._taskService.deleteTask(id)
-            .subscribe(
-                response => console.log('Task deleted, id = ' + id),
-                error => console.log(error)
-        );
-        this.getTasks();
+    onDelete(task: Task){
+        this._taskService.deleteTask(task, this.isActive);
     }
 
-    toggleCompletion(task){
-        this._taskService.updateTask({title: task.title, completed: !task.completed, pk: task.id})
-        .subscribe(
-                response => console.log('Task updated, id = ' + task.id),
-                error => console.log(error)
-        );
-        this.getTasks();
+    toggleCompletion(task: Task){
+               
+        var newTask = new Task(task.title, !task.completed, task.id);
+        this._taskService.updateTask(task, newTask, this.isActive);
+
     }
 
-    onMoseOver(task: {title: string, completed: boolean, id: number}){
+    onMoseOver(task: Task){
         this.deletedTask = task;
     }
 
@@ -105,18 +74,16 @@ export class TodoListComponent{
         this.deletedTask = null;
     }
 
-    editTask(task){
+    editTask(task: Task){
         this.selectedTask = task;
     }
 
     updateTask(newTitle: string){
-        this._taskService.updateTask({title: newTitle, completed: this.selectedTask.completed, pk: this.selectedTask.id})
-        .subscribe(
-                response => console.log('Task updated, id = ' + this.selectedTask.id),
-                error => console.log(error)
-        );
-        this.getTasks();
+        var newTask = new Task(newTitle, this.selectedTask.completed, this.selectedTask.id);
+        this._taskService.updateTask(this.selectedTask, newTask, this.isActive);
+
         this.selectedTask = null;
+
     }
 
     cancelEditingTask(){
@@ -124,44 +91,25 @@ export class TodoListComponent{
     }
 
     onActive(status: string){
+
         this.isActive = status;
-        this.getActive();
         if (status === 'completed'){
-            this.tasks = this.completedTasks;
+            this._taskService.setTasks('completed');
         } else if (status === 'active'){
-            this.tasks = this.activeTasks;
+            this._taskService.setTasks('active');
         } else
-            this.tasks = this.allTasks;
+            this._taskService.setTasks('all');
     }
-
-    getActive(){
-
-        this.completedTasks = [];
-        this.activeTasks = [];
-        this.activeTasksCount = 0;
-
-        for (var i = 0; i < this.allTasks.length; i++){
-            if (this.allTasks[i].completed){
-                this.completedTasks.push(this.allTasks[i]);
-
-            } else{
-                this.activeTasks.push(this.allTasks[i]);
-                this.activeTasksCount += 1;
-            }
-        }
-
-    }
+    
 
     onDeleteAllCompleted(){
-        for(var i = 0; i < this.completedTasks.length; i++){
-            this._taskService.deleteTask(this.completedTasks[i].id)
-            .subscribe(
-                response => console.log('Task deleted, id = ' + this.completedTasks[i].id),
-                error => console.log(error)
-        );
+        var forDelete: Array<Task> = this._taskService.completedTasks;
+        for(var i = 0; i < forDelete.length; i++){
+            this._taskService.deleteTask(forDelete[i], this.isActive);
         }
-        this.getTasks();
+        
         this.onActive(this.isActive);
+                
     }
 
 }
