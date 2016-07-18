@@ -60,8 +60,6 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/Rx'], function(exports_
                         .subscribe(function (response) { return console.log('Task created successful'); }, function (error) { return console.log(error); });
                     this.getTasks(status);
                     this.getTasks(status);
-                    // this.setTasks(status);
-                    // this.setTasks(status);
                 };
                 TaskService.prototype.deleteTask = function (task, status) {
                     this.allTasks.splice(this.allTasks.indexOf(task), 1);
@@ -87,19 +85,13 @@ System.register(['angular2/core', 'angular2/http', 'rxjs/Rx'], function(exports_
                         headers: headers
                     }).subscribe(function (response) { return console.log('Task updated, id = ' + task.id); }, function (error) { return console.log(error); });
                 };
+                TaskService.prototype.getWithCompleted = function (completed) {
+                    return this.allTasks.filter(function (task) { return task.completed === completed; });
+                };
                 TaskService.prototype.getActive = function () {
-                    this.completedTasks = [];
-                    this.activeTasks = [];
-                    this.activeTasksCount = 0;
-                    for (var i = 0; i < this.allTasks.length; i++) {
-                        if (this.allTasks[i].completed) {
-                            this.completedTasks.push(this.allTasks[i]);
-                        }
-                        else {
-                            this.activeTasks.push(this.allTasks[i]);
-                            this.activeTasksCount += 1;
-                        }
-                    }
+                    this.completedTasks = this.getWithCompleted(true);
+                    this.activeTasks = this.getWithCompleted(false);
+                    this.activeTasksCount = this.activeTasks.length;
                 };
                 TaskService.prototype.setTasks = function (status) {
                     this.getActive();

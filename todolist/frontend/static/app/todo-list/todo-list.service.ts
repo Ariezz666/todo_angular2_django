@@ -21,7 +21,7 @@ export class TaskService{
 
     }
 
-    getCookie(name) {
+    private getCookie(name) {
     let value = "; " + document.cookie;
     let parts = value.split("; " + name + "=");
     if (parts.length == 2)
@@ -58,9 +58,6 @@ export class TaskService{
 
         this.getTasks(status);
         this.getTasks(status);
-
-        // this.setTasks(status);
-        // this.setTasks(status);
 
     }
 
@@ -103,21 +100,15 @@ export class TaskService{
         );
     }
 
-    getActive(){
+    private getWithCompleted(completed: Boolean) {
+		return this.allTasks.filter((task: Task) => task.completed === completed);
+}
 
-        this.completedTasks = [];
-        this.activeTasks = [];
-        this.activeTasksCount = 0;
+    private getActive(){
 
-        for (var i = 0; i < this.allTasks.length; i++){
-            if (this.allTasks[i].completed){
-                this.completedTasks.push(this.allTasks[i]);
-
-            } else{
-                this.activeTasks.push(this.allTasks[i]);
-                this.activeTasksCount += 1;
-            }
-        }
+        this.completedTasks = this.getWithCompleted(true);
+        this.activeTasks = this.getWithCompleted(false);
+        this.activeTasksCount = this.activeTasks.length;
 
     }
 
@@ -131,5 +122,4 @@ export class TaskService{
             this.tasks = this.allTasks;
         }
     }
-
-    }
+}
